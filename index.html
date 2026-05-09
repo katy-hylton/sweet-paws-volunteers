@@ -480,6 +480,7 @@ async function handleLogin() {
     options: { expiresIn: rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 24 } // 30 days or 1 day
   });
 if (error) { setLoading(false); showAuthMsg(error.message); return; }
+await initApp(data.user);
 }
 async function handleRegister() {
   const first = document.getElementById('reg-first').value.trim();
