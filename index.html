@@ -469,6 +469,7 @@ function showAuthMsg(msg, type='error') {
   el.textContent = msg; el.className = 'auth-msg ' + type; el.style.display = 'block';
 }
 async function handleLogin() {
+  console.log('login clicked');
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
   if (!email||!password) { showAuthMsg('Please fill in all fields.'); return; }
