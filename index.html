@@ -478,9 +478,7 @@ async function handleLogin() {
     email, password,
     options: { expiresIn: rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 24 } // 30 days or 1 day
   });
-  setLoading(false);
-  if (error) { showAuthMsg(error.message); return; }
-  await initApp(data.user);
+if (error) { setLoading(false); showAuthMsg(error.message); return; }
 }
 async function handleRegister() {
   const first = document.getElementById('reg-first').value.trim();
