@@ -505,16 +505,20 @@ async function handleLogout() {
   showScreen('auth-screen');
 }
 async function checkSession() {
-  // Always listen for auth state changes so persisted sessions are restored on reload
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user && !currentUser) {
+    await initApp(session.user);
+    return;
+  }
+
   sb.auth.onAuthStateChange(async (event, session) => {
-    if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user && !currentUser) {
+    if (event === 'SIGNED_IN' && session?.user && !currentUser) {
       await initApp(session.user);
     } else if (event === 'SIGNED_OUT') {
       currentUser = null; currentProfile = null;
       showScreen('auth-screen');
     }
   });
-}
 
 // INIT
 async function initApp(user) {
