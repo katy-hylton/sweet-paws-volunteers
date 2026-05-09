@@ -503,17 +503,20 @@ async function handleLogout() {
   showScreen('auth-screen');
 }
 async function checkSession() {
+  // First, proactively check for an existing session (catches reload case reliably)
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user && !currentUser) {
     await initApp(session.user);
     return;
   }
 
+  // Also listen for future auth state changes (sign in, sign out, token refresh)
   sb.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session?.user && !currentUser) {
+    if ((event === 'SIGNED_IN') && session?.user && !currentUser) {
       await initApp(session.user);
     } else if (event === 'SIGNED_OUT') {
       currentUser = null; currentProfile = null;
+      try { sessionStorage.removeItem('sp_page'); sessionStorage.removeItem('sp_event'); } catch(e){}
       showScreen('auth-screen');
     }
   });
