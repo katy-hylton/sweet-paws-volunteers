@@ -223,7 +223,7 @@ td{padding:.8rem 1rem;font-size:.88rem}
 
 /* MOBILE TOP BAR */
 .mobile-header{display:none;align-items:center;justify-content:center;padding:2.5rem 1.1rem 1.25rem;background:var(--teal-dark)}
-.mobile-header-logo{display:flex;align-items:center;justify-content:center;gap:3rem;color:white;font-family:'Lora',serif;font-size:1.2rem;font-weight:600}
+.mobile-header-logo{display:flex;align-items:center;justify-content:center;gap:.75rem;color:white;font-family:'Lora',serif;font-size:1.2rem;font-weight:600}
 .mobile-header-logo span{font-size:1.4rem}
 .mobile-header-right{display:flex;align-items:center;gap:.5rem}
 .mobile-avatar{width:60px;height:60px;border-radius:50%;background:var(--coral);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.72rem;color:white}
