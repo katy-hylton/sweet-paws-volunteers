@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Sweet Paws Rescue — Volunteer Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js">
+checkSession();
+</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- CONFIG SCREEN -->
+<div id="config-screen" class="screen" style="display:none">
+  <div class="config-card">
+    <div class="config-logo">
+      <img src="https://images.squarespace-cdn.com/content/v1/5acd6d2a3e2d09e44728ddca/1525190759014-EEDM1UP0OIHE0N001FST/SweetPawsLogo-knockout.png?format=1500w" alt="Sweet Paws Rescue" style="height:64px;object-fit:contain;margin-bottom:.5rem">
+      <h1 style="font-size:40px;">Sweet Paws Rescue</h1>
+      <p>Volunteer Management Portal</p>
+    </div>
+    <div class="form-group">
+      <label>Supabase Project URL</label>
+      <input type="text" id="cfg-url" placeholder="https://xxxxxxxxxxxx.supabase.co">
+    </div>
+    <div class="form-group">
+      <label>Supabase Anon Key</label>
+      <input type="password" id="cfg-key" placeholder="eyJhbGciOiJIUzI1NiIs...">
+    </div>
+    <button class="btn btn-primary btn-full" onclick="saveConfig()">Connect & Launch App</button>
+    <div id="cfg-error" class="auth-msg error" style="margin-top:.75rem"></div>
+    <div class="config-note">
+      <strong>Where to find these:</strong> Supabase dashboard → Settings (⚙️ bottom left) → API.<br>
+      Copy the <em>Project URL</em> and <em>anon / public</em> key. Make sure you've run the SQL schema first!
+    </div>
+  </div>
+</div>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen" class="screen active">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <img src="https://images.squarespace-cdn.com/content/v1/5acd6d2a3e2d09e44728ddca/1525190759014-EEDM1UP0OIHE0N001FST/SweetPawsLogo-knockout.png?format=1500w" alt="Sweet Paws Rescue" style="height:64px;object-fit:contain;margin-bottom:.5rem">
+      <h1>Sweet Paws Rescue</h1>
+      <p>Volunteer Portal</p>
+    </div>
+    <div id="auth-msg" class="auth-msg"></div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchTab('login')">Sign In</button>
+      <button class="auth-tab" onclick="switchTab('register')">Create Account</button>
+    </div>
+    <div id="login-form">
+      <div class="form-group"><label>Email</label><input type="email" id="login-email" placeholder="you@email.com"></div>
+      <div class="form-group"><label>Password</label>
+    <div class="password-wrap">
+      <input type="password" id="login-password" placeholder="••••••••">
+      <button type="button" class="password-toggle" onclick="togglePassword('login-password', this)">Show</button>
+    </div>
+    </div>
+      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.85rem">
+        <input type="checkbox" id="remember-me" style="width:16px;height:16px;accent-color:var(--teal);cursor:pointer">
+        <label for="remember-me" style="font-size:.85rem;color:var(--text-muted);cursor:pointer;font-weight:700">Remember me for 30 days</label>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="handleLogin()">Sign In</button>
+    </div>
+    <div id="register-form" style="display:none">
+      <div class="form-row">
+        <div class="form-group"><label>First Name</label><input type="text" id="reg-first" placeholder="Jane"></div>
+        <div class="form-group"><label>Last Name</label><input type="text" id="reg-last" placeholder="Smith"></div>
+      </div>
+      <div class="form-group"><label>Email</label><input type="email" id="reg-email" placeholder="you@email.com"></div>
+      <div class="form-group"><label>Phone</label><input type="tel" id="reg-phone" placeholder="(555) 000-0000"></div>
+      <div class="form-group"><label>Password</label>
+    <div class="password-wrap">
+      <input type="password" id="reg-password" placeholder="Min 6 characters">
+      <button type="button" class="password-toggle" onclick="togglePassword('reg-password', this)">Show</button>
+    </div>
+    </div>
+      <div class="admin-toggle-row">
+        <span class="admin-toggle-label">🔑 Request Admin Access</span>
+        <label class="switch"><input type="checkbox" id="reg-admin"><span class="slider-sw"></span></label>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="handleRegister()">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app-screen" class="screen">
+
+  <!-- MOBILE TOP HEADER -->
+  <div class="mobile-header">
+    <div class="mobile-header-logo">
+      <img src="https://images.squarespace-cdn.com/content/v1/5acd6d2a3e2d09e44728ddca/1525190759014-EEDM1UP0OIHE0N001FST/SweetPawsLogo-knockout.png?format=1500w" alt="Sweet Paws Rescue" style="height:100px;object-fit:contain">
+    </div>
+  </div>
+
+  <!-- MOBILE BOTTOM NAV -->
+  <div class="mobile-bottom-nav">
+    <div class="mobile-nav-items" id="mobile-nav-items">
+      <button class="mobile-nav-item active" onclick="showPage('dashboard')" data-page="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Home
+      </button>
+      <button class="mobile-nav-item" onclick="showPage('events')" data-page="events">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Events
+      </button>
+      <button class="mobile-nav-item" onclick="showPage('profile')" data-page="profile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21a8 8 0 1 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
+        Profile
+      </button>
+      <!-- Admin items injected by JS -->
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <img src="https://images.squarespace-cdn.com/content/v1/5acd6d2a3e2d09e44728ddca/1525190759014-EEDM1UP0OIHE0N001FST/SweetPawsLogo-knockout.png?format=1500w" alt="Sweet Paws Rescue" style="height:auto;width:75%;object-fit:contain">
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Main</div>
+      <button class="nav-item active" onclick="showPage('dashboard')" data-page="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-item" onclick="showPage('events')" data-page="events">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span>Events</span>
+      </button>
+      <button class="nav-item" onclick="showPage('profile')" data-page="profile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21a8 8 0 1 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Profile</span>
+      </button>
+    </div>
+    <div class="nav-section" id="admin-nav" style="display:none">
+      <div class="nav-label">Admin</div>
+      <button class="nav-item" onclick="showPage('create-event')" data-page="create-event">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        <span>New Event</span>
+      </button>
+      <button class="nav-item" onclick="showPage('volunteers')" data-page="volunteers">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Volunteers</span>
+      </button>
+      <button class="nav-item" onclick="showPage('programs')" data-page="programs">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span>Programs</span>
+      </button>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="user-pill">
+        <div class="user-avatar" id="sidebar-avatar">?</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebar-name">Loading...</div>
+          <div class="user-role-label" id="sidebar-role">Volunteer</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-content">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title" id="dash-greeting">Welcome back!</h1>
+          <p class="page-subtitle">Here's what's coming up for you.</p>
+        </div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-num" id="stat-upcoming">—</div><div class="stat-label">Upcoming Events</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-hours">—</div><div class="stat-label">Total Hours</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-attended">—</div><div class="stat-label">Events Attended</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-progs">—</div><div class="stat-label">Programs Joined</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-header-title">My Upcoming Events</span></div>
+        <div class="card-body">
+          <div id="my-events-list" class="my-events-list">
+            <div class="empty-state"><img src="https://images.squarespace-cdn.com/content/v1/5acd6d2a3e2d09e44728ddca/1525190759014-EEDM1UP0OIHE0N001FST/SweetPawsLogo-knockout.png?format=1500w" alt="Sweet Paws Rescue" style="height:48px;object-fit:contain;margin-bottom:.5rem"><p>No upcoming events yet.<br>Check the Events page to sign up!</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EVENTS LIST -->
+    <div class="page" id="page-events">
+      <div class="page-header">
+        <div><h1 class="page-title">Events</h1><p class="page-subtitle">Browse and sign up for volunteer opportunities.</p></div>
+      </div>
+      <div class="search-bar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="event-search" placeholder="Search events..." oninput="renderEvents()">
+      </div>
+      <div class="filter-tabs" id="program-filter-tabs"></div>
+      <div class="events-grid" id="events-grid"></div>
+    </div>
+
+    <!-- EVENT DETAIL -->
+    <div class="page" id="page-event-detail">
+      <div class="page-header" style="margin-bottom:1.25rem">
+        <button class="btn btn-ghost" onclick="showPage('events')">← Back to Events</button>
+        <div id="detail-admin-btns" style="display:none;gap:.5rem;flex-wrap:wrap"></div>
+      </div>
+      <div id="event-detail-content"></div>
+    </div>
+
+    <!-- CREATE / EDIT EVENT -->
+    <div class="page" id="page-create-event">
+      <div class="page-header">
+        <div><h1 class="page-title" id="editor-title">Create New Event</h1><p class="page-subtitle">Fill in details and add volunteer roles.</p></div>
+      </div>
+      <input type="hidden" id="ev-edit-id">
+      <div class="editor-grid">
+        <div>
+          <div class="card" style="margin-bottom:1.25rem">
+            <div class="card-body">
+              <div class="section-label">Event Details</div>
+              <div class="form-group"><label>Event Name *</label><input type="text" id="ev-name" placeholder="e.g. Barktoberfest 2026"></div>
+              <div class="form-row">
+                <div class="form-group"><label>Start Date & Time</label><input type="datetime-local" id="ev-start"></div>
+                <div class="form-group"><label>End Time</label><input type="datetime-local" id="ev-end"></div>
+              </div>
+              <div class="form-group"><label>Location Name</label><input type="text" id="ev-location" placeholder="e.g. Cashman Park"></div>
+              <div class="form-group"><label>Address</label><input type="text" id="ev-address" placeholder="123 Main St, Newburyport, MA"></div>
+              <div class="form-group"><label>Description / Details</label><textarea id="ev-desc" placeholder="What should volunteers expect? Include parking, what to wear, etc."></textarea></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-body">
+              <div class="section-label">Volunteer Roles & Shifts</div>
+              <div id="roles-editor-list"></div>
+              <button class="add-role-btn" onclick="addRoleEditor()">+ Add Role / Shift</button>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="card" style="position:sticky;top:1.5rem">
+            <div class="card-body">
+              <div class="section-label">Program & Settings</div>
+              <div class="form-group"><label>Program</label><select id="ev-program"><option value="">No program</option></select></div>
+
+              <div class="switch-row">
+                <span class="switch-label">📋 Save as Template</span>
+                <label class="switch"><input type="checkbox" id="ev-is-template"><span class="slider-sw"></span></label>
+              </div>
+              <div class="switch-row">
+                <span class="switch-label">🔁 Recurring Event</span>
+                <label class="switch"><input type="checkbox" id="ev-recurring" onchange="toggleRecurring(this)"><span class="slider-sw"></span></label>
+              </div>
+              <div id="recurrence-opts" style="display:none;margin-bottom:.75rem">
+                <div class="form-group"><label>Recurrence Pattern</label>
+                  <select id="ev-recurrence">
+                    <option value="weekly">Weekly</option>
+                    <option value="biweekly">Every 2 Weeks</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                </div>
+              </div>
+              <div class="section-label" style="margin-top:1rem">Links & Documents</div>
+              <div id="ev-links-list"></div>
+              <button class="add-role-btn" onclick="addLinkEditor()" style="margin-bottom:.75rem">+ Add Link / Button</button>
+              <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:.25rem">
+                <button class="btn btn-primary btn-full" onclick="saveEvent('published')">🚀 Publish Event</button>
+                <button class="btn btn-outline btn-full" onclick="saveEvent('draft')">💾 Save as Draft</button>
+              </div>
+            </div>
+          </div>
+          <div class="card" id="templates-panel" style="margin-top:1rem;display:none">
+            <div class="card-body">
+              <div class="section-label">Load from Template</div>
+              <div id="templates-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VOLUNTEERS (Admin) -->
+    <div class="page" id="page-volunteers">
+      <div class="page-header">
+        <div><h1 class="page-title">Volunteers</h1><p class="page-subtitle">Manage your roster and track hours.</p></div>
+      </div>
+      <div class="search-bar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="vol-search" placeholder="Search by name or email..." oninput="renderVolunteers()">
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Volunteer</th><th>Email</th><th>Phone</th><th>Programs</th><th>Hours</th><th>Role</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="vol-tbody"><tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    
+    <!-- PROFILE -->
+    <div class="page" id="page-profile">
+      <div class="page-header">
+        <div><h1 class="page-title">My Profile</h1><p class="page-subtitle">Update your information and profile photo.</p></div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>First Name</label>
+              <input type="text" id="profile-first">
+            </div>
+            <div class="form-group">
+              <label>Last Name</label>
+              <input type="text" id="profile-last">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="profile-email" disabled>
+          </div>
+
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="tel" id="profile-phone">
+          </div>
+
+          <button class="btn btn-primary" onclick="saveProfile()">Save Profile</button>
+        </div>
+      </div>
+      <div style="margin-top:1rem">
+        <button class="btn btn-outline btn-full" onclick="handleLogout()" style="color:#991b1b;border-color:#fecaca">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign Out
+        </button>
+      </div>
+    </div>
+
+
+    <!-- PROGRAMS -->
+    <div class="page" id="page-programs">
+      <div class="page-header">
+        <div><h1 class="page-title">Programs</h1><p class="page-subtitle">Event categories and volunteer groups.</p></div>
+        <button class="btn btn-primary" id="new-prog-btn" style="display:none" onclick="openModal('prog-modal')">+ New Program</button>
+      </div>
+      <div class="programs-grid" id="programs-grid"><div class="empty-state" style="grid-column:1/-1"><div class="spinner"></div></div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODALS -->
+
+<!-- Edit Volunteer -->
+<div class="modal-overlay" id="vol-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('vol-modal')">✕</button>
+    <h3>Edit Volunteer</h3>
+    <input type="hidden" id="vol-edit-id">
+    <div class="form-row">
+      <div class="form-group"><label>First Name</label><input type="text" id="vol-first"></div>
+      <div class="form-group"><label>Last Name</label><input type="text" id="vol-last"></div>
+    </div>
+    <div class="form-group"><label>Phone</label><input type="tel" id="vol-phone"></div>
+    <div class="form-group">
+      <label>Assign to Programs</label>
+      <div id="vol-prog-checks" style="display:flex;flex-direction:column;gap:.4rem;margin-top:.4rem"></div>
+    </div>
+    <div class="admin-toggle-row">
+      <span class="admin-toggle-label">🔑 Admin Access</span>
+      <label class="switch"><input type="checkbox" id="vol-is-admin"><span class="slider-sw"></span></label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('vol-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveVolunteer()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Program -->
+<div class="modal-overlay" id="prog-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('prog-modal')">✕</button>
+    <h3>New Program</h3>
+    <div class="form-group"><label>Program Name *</label><input type="text" id="prog-name" placeholder="e.g. Barktoberfest"></div>
+    <div class="form-group"><label>Description</label><textarea id="prog-desc" placeholder="What is this program?" style="min-height:70px"></textarea></div>
+    <div class="form-group">
+      <label>Color</label>
+      <div class="color-row" id="prog-color-picker">
+        <div class="color-dot selected" style="background:#0d7377" data-color="#0d7377" onclick="selectProgColor(this)"></div>
+        <div class="color-dot" style="background:#f2687a" data-color="#f2687a" onclick="selectProgColor(this)"></div>
+        <div class="color-dot" style="background:#7c3aed" data-color="#7c3aed" onclick="selectProgColor(this)"></div>
+        <div class="color-dot" style="background:#d97706" data-color="#d97706" onclick="selectProgColor(this)"></div>
+        <div class="color-dot" style="background:#059669" data-color="#059669" onclick="selectProgColor(this)"></div>
+        <div class="color-dot" style="background:#2563eb" data-color="#2563eb" onclick="selectProgColor(this)"></div>
+        <div class="color-dot" style="background:#db2777" data-color="#db2777" onclick="selectProgColor(this)"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('prog-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProgram()">Create Program</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="loading-overlay" id="loading"><div class="spinner"></div><p style="color:var(--text-muted);font-size:.88rem">Loading...</p></div>
+
+<script>
+const COLORS = ['#0d7377','#f2687a','#7c3aed','#d97706','#059669','#2563eb','#db2777'];
+let sb = null, currentUser = null, currentProfile = null;
+let allEvents = [], allVolunteers = [], allPrograms = [];
+let currentEventId = null, editingRoleCount = 0;
+let selectedEvColor = '#0d7377', selectedProgColor = '#0d7377';
+let currentProgFilter = 'all';
+
+
+const SUPABASE_URL = 'https://awtdkwquqzvbcanhpkvk.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3dGRrd3F1cXp2YmNhbmhwa3ZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMDg4OTksImV4cCI6MjA5MzY4NDg5OX0.bxCfQ6pxRhbZyS1dSf1c1zBbZV9VgDXzOhLnaJYLn3E';
+
+sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+function togglePassword(id, btn){
+  const input = document.getElementById(id);
+  if(input.type === 'password'){
+    input.type = 'text';
+    btn.textContent = 'Hide';
+  } else {
+    input.type = 'password';
+    btn.textContent = 'Show';
+  }
+}
+
+
+// CONFIG
+function saveConfig() {
+  const url = document.getElementById('cfg-url').value.trim();
+  const key = document.getElementById('cfg-key').value.trim();
+  if (!url || !key) { showCfgError('Please enter both values.'); return; }
+  if (!url.startsWith('https://')) { showCfgError('URL must start with https://'); return; }
+  try {
+    sb = supabase.createClient(url, key);
+    localStorage.setItem('sp_url', url);
+    localStorage.setItem('sp_key', key);
+    showScreen('auth-screen');
+    checkSession();
+  } catch(e) { showCfgError('Invalid credentials. Please check and try again.'); }
+}
+function showCfgError(msg) {
+  const el = document.getElementById('cfg-error');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+// AUTH
+function switchTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (tab==='login'&&i===0)||(tab==='register'&&i===1)));
+  document.getElementById('login-form').style.display = tab==='login' ? 'block' : 'none';
+  document.getElementById('register-form').style.display = tab==='register' ? 'block' : 'none';
+  document.getElementById('auth-msg').style.display = 'none';
+}
+function showAuthMsg(msg, type='error') {
+  const el = document.getElementById('auth-msg');
+  el.textContent = msg; el.className = 'auth-msg ' + type; el.style.display = 'block';
+}
+async function handleLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email||!password) { showAuthMsg('Please fill in all fields.'); return; }
+  setLoading(true);
+  const rememberMe = document.getElementById('remember-me')?.checked;
+  const { data, error } = await sb.auth.signInWithPassword({
+    email, password,
+    options: { expiresIn: rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 24 } // 30 days or 1 day
+  });
+  setLoading(false);
+  if (error) { showAuthMsg(error.message); return; }
+  await initApp(data.user);
+}
+async function handleRegister() {
+  const first = document.getElementById('reg-first').value.trim();
+  const last = document.getElementById('reg-last').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const phone = document.getElementById('reg-phone').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const isAdmin = document.getElementById('reg-admin').checked;
+  if (!first||!last||!email||!password) { showAuthMsg('Please fill in all required fields.'); return; }
+  setLoading(true);
+  const { data, error } = await sb.auth.signUp({ email, password, options: { data: { first_name: first, last_name: last, phone } } });
+  if (error) { setLoading(false); showAuthMsg(error.message); return; }
+  if (data.user && isAdmin) {
+    await sb.from('profiles').update({ is_admin: true }).eq('id', data.user.id);
+  }
+  setLoading(false);
+  showAuthMsg('Account created! Please check your email to confirm, then sign in.', 'success');
+}
+async function handleLogout() {
+  await sb.auth.signOut();
+  currentUser = null; currentProfile = null;
+  showScreen('auth-screen');
+}
+async function checkSession() {
+  // Always listen for auth state changes so persisted sessions are restored on reload
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user && !currentUser) {
+      await initApp(session.user);
+    } else if (event === 'SIGNED_OUT') {
+      currentUser = null; currentProfile = null;
+      showScreen('auth-screen');
+    }
+  });
+}
+
+// INIT
+async function initApp(user) {
+  currentUser = user;
+  setLoading(true);
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
+  currentProfile = profile;
+  if (profile) {
+    const initials = ((profile.first_name||'')[0]+(profile.last_name||'')[0]).toUpperCase();
+    document.getElementById('sidebar-avatar').textContent = initials;
+    document.getElementById('sidebar-name').textContent = profile.first_name + ' ' + profile.last_name;
+    document.getElementById('sidebar-role').textContent = profile.is_admin ? 'Admin' : 'Volunteer';
+    document.getElementById('dash-greeting').textContent = 'Welcome, ' + profile.first_name + '!';
+
+    document.getElementById('profile-first').value = profile.first_name || '';
+    document.getElementById('profile-last').value = profile.last_name || '';
+    document.getElementById('profile-email').value = profile.email || user.email || '';
+    document.getElementById('profile-phone').value = profile.phone || '';
+
+    if (profile.is_admin) {
+      document.getElementById('admin-nav').style.display = 'block';
+      document.getElementById('new-prog-btn').style.display = 'inline-flex';
+      // Inject admin items into mobile bottom nav
+      const mobileNav = document.getElementById('mobile-nav-items');
+      mobileNav.insertAdjacentHTML('beforeend', `
+        <button class="mobile-nav-item" onclick="showPage('create-event')" data-page="create-event">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          New
+        </button>
+        <button class="mobile-nav-item" onclick="showPage('volunteers')" data-page="volunteers">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Volunteers
+        </button>
+        <button class="mobile-nav-item" onclick="showPage('programs')" data-page="programs">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          Programs
+        </button>`);
+    }
+  }
+  await loadData();
+  showScreen('app-screen');
+  // Restore last page from sessionStorage if available (persists across reload but not tab close)
+  const savedPage = sessionStorage.getItem('sp_page');
+  const savedEvent = sessionStorage.getItem('sp_event');
+  if (savedPage && savedPage !== 'dashboard' && document.getElementById('page-'+savedPage)) {
+    if (savedPage === 'event-detail' && savedEvent) {
+      openEvent(savedEvent);
+    } else {
+      showPage(savedPage);
+    }
+  } else {
+    showPage('dashboard');
+  }
+  setLoading(false);
+}
+
+async function loadData() {
+  const [evRes, progRes, volRes, myProgRes] = await Promise.all([
+    sb.from('events').select('*, programs(*), event_roles(*, signups(*, profiles(*)))').order('start_time'),
+    sb.from('programs').select('*').order('name'),
+    currentProfile?.is_admin ? sb.from('profiles').select('*, volunteer_programs(*, programs(*))').order('last_name') : Promise.resolve({data:[]}),
+    sb.from('volunteer_programs').select('program_id').eq('volunteer_id', currentUser.id)
+  ]);
+  allEvents = evRes.data || [];
+  allPrograms = progRes.data || [];
+  if (currentProfile?.is_admin) allVolunteers = volRes.data || [];
+
+  // Non-admins only see events from their assigned programs (empty = see nothing)
+  if (!currentProfile?.is_admin) {
+    const myProgIds = (myProgRes.data || []).map(r => r.program_id);
+    allEvents = allEvents.filter(e => myProgIds.includes(e.program_id));
+    allPrograms = allPrograms.filter(p => myProgIds.includes(p.id));
+  }
+
+  renderAll();
+}
+
+
+async function saveProfile() {
+  const updates = {
+    first_name: document.getElementById('profile-first').value.trim(),
+    last_name: document.getElementById('profile-last').value.trim(),
+    phone: document.getElementById('profile-phone').value.trim(),
+  };
+
+  const { error } = await sb.from('profiles').update(updates).eq('id', currentUser.id);
+
+  if(error){
+    toast(error.message, true);
+    return;
+  }
+
+  toast('Profile updated!');
+  await loadData();
+}
+
+
+function renderAll() {
+  renderDashboard();
+  renderEvents();
+  renderPrograms();
+  renderProgramFilters();
+  populateProgramSelect();
+  if (currentProfile?.is_admin) renderVolunteers();
+}
+
+// DASHBOARD
+function renderDashboard() {
+  const signedEvents = allEvents.filter(e => e.event_roles?.some(r => r.signups?.some(s => s.volunteer_id === currentUser.id)));
+  const now = new Date();
+  const upcoming = signedEvents.filter(e => e.start_time && new Date(e.start_time) > now);
+  document.getElementById('stat-upcoming').textContent = upcoming.length;
+  document.getElementById('stat-hours').textContent = Math.round(currentProfile?.total_hours || 0);
+  document.getElementById('stat-attended').textContent = signedEvents.filter(e => e.start_time && new Date(e.start_time) <= now).length;
+  document.getElementById('stat-progs').textContent = new Set(signedEvents.map(e=>e.program_id).filter(Boolean)).size;
+
+  const list = document.getElementById('my-events-list');
+  if (!upcoming.length) {
+    list.innerHTML = '<div class="empty-state"><img src="https://images.squarespace-cdn.com/content/v1/5acd6d2a3e2d09e44728ddca/1525190759014-EEDM1UP0OIHE0N001FST/SweetPawsLogo-knockout.png?format=1500w" alt="Sweet Paws Rescue" style="height:48px;object-fit:contain;margin-bottom:.5rem"><p>No upcoming events yet.<br>Check the Events page to sign up!</p></div>';
+    return;
+  }
+  list.innerHTML = upcoming.sort((a,b)=>new Date(a.start_time)-new Date(b.start_time)).map(e => {
+    const role = e.event_roles?.find(r => r.signups?.some(s => s.volunteer_id === currentUser.id));
+    const color = e.programs?.color || '#0d7377';
+    return `<div class="my-event-row" onclick="openEvent('${e.id}')">
+      <div class="my-event-dot" style="background:${color}"></div>
+      <div class="my-event-info">
+        <div class="my-event-name">${esc(e.name)}</div>
+        <div class="my-event-meta">${fmtDate(e.start_time)} · ${esc(e.location||'Location TBD')}</div>
+      </div>
+      ${role ? `<span class="my-event-role">${esc(role.name)}</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// EVENTS
+function renderEvents() {
+  const grid = document.getElementById('events-grid');
+  const search = (document.getElementById('event-search')?.value||'').toLowerCase();
+  let events = allEvents.filter(e => currentProfile?.is_admin || e.status === 'published');
+  if (search) events = events.filter(e => e.name.toLowerCase().includes(search) || (e.location||'').toLowerCase().includes(search));
+  if (currentProgFilter !== 'all') events = events.filter(e => e.program_id === currentProgFilter);
+  if (!events.length) { grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><img src="https://images.squarespace-cdn.com/content/v1/5acd6d2a3e2d09e44728ddca/1525190759014-EEDM1UP0OIHE0N001FST/SweetPawsLogo-knockout.png?format=1500w" alt="Sweet Paws Rescue" style="height:48px;object-fit:contain;margin-bottom:.5rem"><p>No events found.</p></div>'; return; }
+  grid.innerHTML = events.map(e => {
+    const color = e.programs?.color || '#0d7377';
+    const total = e.event_roles?.reduce((s,r)=>s+r.capacity,0)||0;
+    const filled = e.event_roles?.reduce((s,r)=>s+(r.signups?.length||0),0)||0;
+    const pct = total ? Math.round(filled/total*100) : 0;
+    return `<div class="event-card" onclick="openEvent('${e.id}')">
+      <div class="event-banner" style="background:${color}"></div>
+      <div class="event-card-body">
+        ${e.status==='draft'?'<span class="draft-badge">Draft</span>':''}
+        ${e.programs?`<span class="prog-badge" style="background:${color}20;color:${color}">${esc(e.programs.name)}</span>`:''}
+        <div class="event-card-title">${esc(e.name)}</div>
+        ${e.start_time?`<div class="event-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${fmtDate(e.start_time)}</div>`:''}
+        ${e.location?`<div class="event-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${esc(e.location)}</div>`:''}
+        ${total?`<div class="progress-wrap">
+          <div class="progress-labels"><span style="color:var(--text-muted)">${filled}/${total} spots filled</span><span style="font-weight:800;color:${color}">${pct}%</span></div>
+          <div class="progress-bg"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div>
+        </div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderProgramFilters() {
+  const tabs = document.getElementById('program-filter-tabs');
+  tabs.innerHTML = `<button class="filter-tab active" onclick="setProgramFilter('all',this)">All Events</button>`
+    + allPrograms.map(p=>`<button class="filter-tab" onclick="setProgramFilter('${p.id}',this)" style="--prog-color:${p.color}">${esc(p.name)}</button>`).join('');
+}
+
+function setProgramFilter(id, btn) {
+  currentProgFilter = id;
+  document.querySelectorAll('.filter-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  renderEvents();
+}
+
+// EVENT DETAIL
+function openEvent(id) {
+  currentEventId = id;
+  const e = allEvents.find(ev=>ev.id===id);
+  if (!e) return;
+  const color = e.programs?.color || '#0d7377';
+
+  const adminBtns = document.getElementById('detail-admin-btns');
+  if (currentProfile?.is_admin) {
+    adminBtns.style.display = 'flex';
+    adminBtns.innerHTML = `<button class="btn btn-outline btn-sm" onclick="editEvent('${id}')">Edit Event</button>
+      ${e.status==='draft'?`<button class="btn btn-primary btn-sm" onclick="publishEvent('${id}')">Publish</button>`:''}
+      <button class="btn btn-danger btn-sm" onclick="deleteEvent('${id}')">Delete Event</button>`;
+  }
+
+  const rolesHTML = (e.event_roles||[]).map(role => {
+    const filled = role.signups?.length||0;
+    const full = filled >= role.capacity;
+    const mySignup = role.signups?.find(s=>s.volunteer_id===currentUser?.id);
+    const volChips = (role.signups||[]).map(s=>`<span class="vol-chip">${esc(s.profiles?.first_name||'')} ${esc(s.profiles?.last_name||'')}</span>`).join('');
+    return `<div class="role-card">
+      <div class="role-header">
+        <div>
+          <div class="role-name">${esc(role.name)}</div>
+          ${role.start_time?`<div class="role-time">${fmtTime(role.start_time)}${role.end_time?' – '+fmtTime(role.end_time):''}</div>`:''}
+        </div>
+        <div>
+          ${mySignup
+            ? `<button class="btn btn-danger btn-sm" onclick="unsignup('${role.id}','${mySignup.id}')">Cancel Signup</button>`
+            : `<button class="btn btn-sm" style="background:${full?'#e5e7eb':color};color:${full?'#9ca3af':'white'};border:none;cursor:${full?'not-allowed':'pointer'};font-family:'Nunito';font-weight:800" ${full?'disabled':''} onclick="signup('${role.id}','${id}')">${full?'Full':'Sign Up'}</button>`
+          }
+        </div>
+      </div>
+      ${role.description?`<div class="role-desc">${esc(role.description)}</div>`:''}
+      <div class="role-meta">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        ${filled}/${role.capacity} volunteers
+        ${role.hours_credit?` &nbsp;·&nbsp; ${role.hours_credit}h credit`:''}
+      </div>
+      ${volChips?`<div class="vol-chips">${volChips}</div>`:''}
+    </div>`;
+  }).join('');
+
+  document.getElementById('event-detail-content').innerHTML = `
+    <div class="detail-header">
+      <div class="detail-banner" style="background:${color}"></div>
+      <div class="detail-body">
+        ${e.programs?`<span class="prog-badge" style="background:${color}20;color:${color};margin-bottom:.75rem">${esc(e.programs.name)}</span>`:''}
+        <h2 class="detail-title">${esc(e.name)}</h2>
+        <div class="detail-meta-row">
+          ${e.start_time?`<div class="detail-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${fmtDate(e.start_time)}${e.end_time?' – '+fmtTime(e.end_time):''}</div>`:''}
+          ${e.location?`<div class="detail-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${esc(e.location)}</div>`:''}
+          ${e.address?`<div class="detail-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>${esc(e.address)}</div>`:''}
+        </div>
+        ${e.description?`<div class="detail-desc">${esc(e.description)}</div>`:''}
+        ${(e.links&&e.links.length)?`<div class="event-links-row">${e.links.map(l=>`<a href="${l.url}" target="_blank" rel="noopener" class="btn btn-outline event-link-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${esc(l.label)}</a>`).join('')}</div>`:''}
+      </div>
+    </div>
+    <div>
+      <h3 style="font-size:1.05rem;font-weight:800;font-family:'Nunito',sans-serif;margin-bottom:1rem">Volunteer Roles</h3>
+      ${rolesHTML||'<div class="empty-state"><img src="https://images.squarespace-cdn.com/content/v1/5acd6d2a3e2d09e44728ddca/1525190759014-EEDM1UP0OIHE0N001FST/SweetPawsLogo-knockout.png?format=1500w" alt="Sweet Paws Rescue" style="height:48px;object-fit:contain;margin-bottom:.5rem"><p>No roles added yet.</p></div>'}
+    </div>`;
+  showPage('event-detail');
+}
+
+async function signup(roleId, eventId) {
+  const { error } = await sb.from('signups').insert({ volunteer_id: currentUser.id, role_id: roleId, event_id: eventId });
+  if (error) { toast(error.code==='23505'?'Already signed up for this role!':error.message, true); return; }
+  toast('Signed up! 🐾');
+  await loadData();
+  openEvent(eventId);
+}
+
+async function unsignup(roleId, signupId) {
+  const { error } = await sb.from('signups').delete().eq('id', signupId);
+  if (error) { toast(error.message, true); return; }
+  toast('Signup cancelled.');
+  await loadData();
+  openEvent(currentEventId);
+}
+
+async function publishEvent(id) {
+  await sb.from('events').update({ status: 'published' }).eq('id', id);
+  toast('Event published! 🎉');
+  await loadData();
+  openEvent(id);
+}
+
+async function deleteEvent(id) {
+  if (!confirm('Are you sure you want to delete this event? This cannot be undone.')) return;
+  setLoading(true);
+  await sb.from('signups').delete().eq('event_id', id);
+  await sb.from('event_roles').delete().eq('event_id', id);
+  await sb.from('events').delete().eq('id', id);
+  setLoading(false);
+  toast('Event deleted.');
+  await loadData();
+  showPage('events');
+}
+
+// Helper: compute auto hours display for a role card
+function updateRoleAutoHours(card) {
+  const customTime = card.querySelector('.re-custom-time').checked;
+  const hoursInput = card.querySelector('.re-hours');
+  // Only update if the field hasn't been manually edited
+  if (hoursInput.dataset.manual === 'true') return;
+  let autoHours = null;
+  if (customTime) {
+    const s = card.querySelector('.re-start').value;
+    const e = card.querySelector('.re-end').value;
+    if (s && e) autoHours = Math.round(((new Date(e) - new Date(s)) / 36e5) * 2) / 2;
+  } else {
+    const s = document.getElementById('ev-start').value;
+    const e = document.getElementById('ev-end').value;
+    if (s && e) autoHours = Math.round(((new Date(e) - new Date(s)) / 36e5) * 2) / 2;
+  }
+  if (autoHours !== null && autoHours > 0) {
+    hoursInput.value = autoHours;
+    hoursInput.placeholder = autoHours + 'h (auto)';
+  } else {
+    hoursInput.value = '';
+    hoursInput.placeholder = 'e.g. 3';
+  }
+}
+
+// When event-level times change, update all role cards that use event time
+function onEventTimeChange() {
+  document.querySelectorAll('.role-editor-card').forEach(card => {
+    if (!card.querySelector('.re-custom-time').checked) {
+      updateRoleAutoHours(card);
+    }
+  });
+}
+
+function addRoleEditor(role={}) {
+  editingRoleCount++;
+  const div = document.createElement('div');
+  div.className = 'role-editor-card';
+  div.id = 're-'+editingRoleCount;
+  if (role.id) div.dataset.roleId = role.id; // store DB id for smart diffing
+
+  div.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+    <span style="font-weight:800;font-size:.88rem;color:var(--text)">Role ${editingRoleCount}</span>
+    <button class="btn btn-ghost btn-sm" style="color:#ef4444" onclick="this.closest('.role-editor-card').remove()">Remove</button>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Role Name *</label><input type="text" class="re-name" value="${esc(role.name||'')}" placeholder="e.g. Gate Check-In"></div>
+    <div class="form-group"><label>Capacity</label><input type="number" class="re-cap" value="${role.capacity||1}" min="1"></div>
+  </div>
+  <div class="form-group"><label>Description</label><textarea class="re-desc" style="min-height:60px" placeholder="What will volunteers do?">${esc(role.description||'')}</textarea></div>
+  <div class="switch-row" style="margin-bottom:.5rem">
+    <span class="switch-label">🕐 Different date/time from event</span>
+    <label class="switch"><input type="checkbox" class="re-custom-time" ${(role.start_time||role.end_time)?'checked':''}><span class="slider-sw"></span></label>
+  </div>
+  <div class="re-time-fields" style="display:${(role.start_time||role.end_time)?'block':'none'}">
+    <div class="form-row">
+      <div class="form-group"><label>Start Time</label><input type="datetime-local" class="re-start" value="${role.start_time?role.start_time.slice(0,16):''}"></div>
+      <div class="form-group"><label>End Time</label><input type="datetime-local" class="re-end" value="${role.end_time?role.end_time.slice(0,16):''}"></div>
+    </div>
+  </div>
+  <div class="form-group"><label>Hours Credit <span style="font-weight:400;color:var(--text-muted);font-size:.75em">(auto-calculated from shift time)</span></label><input type="number" class="re-hours" value="${role.hours_credit||''}" step="0.5" placeholder="e.g. 3" style="max-width:140px"></div>`;
+
+  document.getElementById('roles-editor-list').appendChild(div);
+
+  // Wire up interactivity
+  const customTimeCb = div.querySelector('.re-custom-time');
+  const timeFields = div.querySelector('.re-time-fields');
+  const hoursInput = div.querySelector('.re-hours');
+
+  customTimeCb.addEventListener('change', () => {
+    timeFields.style.display = customTimeCb.checked ? 'block' : 'none';
+    hoursInput.dataset.manual = 'false';
+    updateRoleAutoHours(div);
+  });
+
+  div.querySelector('.re-start').addEventListener('change', () => {
+    hoursInput.dataset.manual = 'false';
+    updateRoleAutoHours(div);
+  });
+  div.querySelector('.re-end').addEventListener('change', () => {
+    hoursInput.dataset.manual = 'false';
+    updateRoleAutoHours(div);
+  });
+
+  // If user types a custom hours value, mark as manual so auto-calc doesn't overwrite
+  hoursInput.addEventListener('input', () => {
+    hoursInput.dataset.manual = 'true';
+  });
+
+  // Initial auto-calculate
+  if (!role.hours_credit) {
+    updateRoleAutoHours(div);
+  }
+}
+
+function selectEvColor(el) {
+  document.querySelectorAll('#ev-color-picker .color-dot').forEach(d=>d.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedEvColor = el.dataset.color;
+}
+function selectProgColor(el) {
+  document.querySelectorAll('#prog-color-picker .color-dot').forEach(d=>d.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedProgColor = el.dataset.color;
+}
+function toggleRecurring(cb) {
+  document.getElementById('recurrence-opts').style.display = cb.checked ? 'block' : 'none';
+}
+
+function isSuperAdmin() {
+  // A super admin is an admin with no program restrictions (no volunteer_programs rows)
+  const myAssigned = allVolunteers.find(v=>v.id===currentUser?.id)?.volunteer_programs||[];
+  return myAssigned.length === 0;
+}
+
+function populateProgramSelect() {
+  const sel = document.getElementById('ev-program');
+  if (!sel) return;
+  const cur = sel.value;
+  // Restrict program-admins to only their assigned programs
+  const myAssigned = allVolunteers.find(v=>v.id===currentUser?.id)?.volunteer_programs?.map(vp=>vp.program_id)||[];
+  const visibleProgs = (currentProfile?.is_super_admin || myAssigned.length===0)
+    ? allPrograms
+    : allPrograms.filter(p=>myAssigned.includes(p.id));
+  sel.innerHTML = '<option value="">No program</option>' + visibleProgs.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+  if (cur) sel.value = cur;
+}
+
+async function saveEvent(status) {
+  const name = document.getElementById('ev-name').value.trim();
+  if (!name) { toast('Event name is required.', true); return; }
+
+  // Compute auto hours from event-level times for roles that use event time
+  const evStartVal = document.getElementById('ev-start').value;
+  const evEndVal = document.getElementById('ev-end').value;
+  const evAutoHours = (evStartVal && evEndVal)
+    ? Math.round(((new Date(evEndVal) - new Date(evStartVal)) / 36e5) * 2) / 2
+    : null;
+
+  const roles = Array.from(document.querySelectorAll('.role-editor-card')).map(card=>{
+    const customTime = card.querySelector('.re-custom-time').checked;
+    const roleStart = customTime ? (card.querySelector('.re-start').value||null) : null;
+    const roleEnd   = customTime ? (card.querySelector('.re-end').value||null)   : null;
+    // Auto-compute hours: use role times if custom, otherwise event times
+    let autoHours = null;
+    if (customTime && roleStart && roleEnd) {
+      autoHours = Math.round(((new Date(roleEnd) - new Date(roleStart)) / 36e5) * 2) / 2;
+    } else if (!customTime && evAutoHours !== null) {
+      autoHours = evAutoHours;
+    }
+    // Only use manual override if the field was explicitly changed by user
+    const manualHours = parseFloat(card.querySelector('.re-hours').value) || null;
+    return {
+      _id: card.dataset.roleId || null, // existing role id for diffing
+      name: card.querySelector('.re-name').value.trim(),
+      capacity: parseInt(card.querySelector('.re-cap').value)||1,
+      description: card.querySelector('.re-desc').value.trim(),
+      start_time: roleStart,
+      end_time: roleEnd,
+      hours_credit: manualHours !== null ? manualHours : autoHours,
+    };
+  }).filter(r=>r.name);
+
+  const editId = document.getElementById('ev-edit-id').value;
+  const evData = {
+    name, status,
+    program_id: document.getElementById('ev-program').value||null,
+    start_time: evStartVal||null,
+    end_time: evEndVal||null,
+    location: document.getElementById('ev-location').value.trim()||null,
+    address: document.getElementById('ev-address').value.trim()||null,
+    description: document.getElementById('ev-desc').value.trim()||null,
+    is_template: document.getElementById('ev-is-template').checked,
+    is_recurring: document.getElementById('ev-recurring').checked,
+    recurrence_rule: document.getElementById('ev-recurring').checked ? document.getElementById('ev-recurrence').value : null,
+    links: Array.from(document.querySelectorAll('.link-editor-row')).map(row => ({
+      label: row.querySelector('.le-label').value.trim(),
+      url: row.querySelector('.le-url').value.trim(),
+    })).filter(l => l.label && l.url),
+    created_by: currentUser.id,
+  };
+
+  setLoading(true);
+  let evId = editId;
+  if (editId) {
+    await sb.from('events').update(evData).eq('id', editId);
+
+    // Smart role diffing: update existing roles (preserving signups), delete removed ones, insert new ones
+    const existingRoleIds = (allEvents.find(e=>e.id===editId)?.event_roles||[]).map(r=>r.id);
+    const keptIds = roles.map(r=>r._id).filter(Boolean);
+    const deletedIds = existingRoleIds.filter(id=>!keptIds.includes(id));
+
+    // Delete signups for removed roles, then delete those roles
+    if (deletedIds.length) {
+      await sb.from('signups').delete().in('role_id', deletedIds);
+      await sb.from('event_roles').delete().in('id', deletedIds);
+    }
+
+    // Update existing roles & insert new ones
+    for (const r of roles) {
+      const { _id, ...roleData } = r;
+      if (_id) {
+        await sb.from('event_roles').update({...roleData, event_id: editId}).eq('id', _id);
+      } else {
+        await sb.from('event_roles').insert({...roleData, event_id: editId});
+      }
+    }
+  } else {
+    const { data, error } = await sb.from('events').insert(evData).select().single();
+    if (error) { setLoading(false); toast(error.message, true); return; }
+    evId = data.id;
+    if (evId && roles.length) {
+      const { _id, ...rest } = roles[0]; // strip _id for inserts
+      await sb.from('event_roles').insert(roles.map(({_id,...r})=>({...r, event_id:evId})));
+    }
+  }
+  setLoading(false);
+  toast(status==='published'?'Event published! 🎉':'Draft saved!');
+  await loadData();
+  showPage('events');
+}
+
+function editEvent(id) {
+  const e = allEvents.find(ev=>ev.id===id);
+  if (!e) return;
+  document.getElementById('editor-title').textContent = 'Edit Event';
+  document.getElementById('ev-edit-id').value = e.id;
+  document.getElementById('ev-name').value = e.name||'';
+  document.getElementById('ev-start').value = e.start_time?.slice(0,16)||'';
+  document.getElementById('ev-end').value = e.end_time?.slice(0,16)||'';
+  document.getElementById('ev-location').value = e.location||'';
+  document.getElementById('ev-address').value = e.address||'';
+  document.getElementById('ev-desc').value = e.description||'';
+  document.getElementById('ev-program').value = e.program_id||'';
+  document.getElementById('ev-is-template').checked = e.is_template||false;
+  document.getElementById('ev-recurring').checked = e.is_recurring||false;
+  document.getElementById('roles-editor-list').innerHTML = '';
+  document.getElementById('ev-links-list').innerHTML = '';
+  editingRoleCount = 0;
+  (e.event_roles||[]).forEach(r=>addRoleEditor(r));
+  (e.links||[]).forEach(l=>addLinkEditor(l));
+  showPage('create-event');
+}
+
+// VOLUNTEERS
+function renderVolunteers() {
+  const search = (document.getElementById('vol-search')?.value||'').toLowerCase();
+  let vols = allVolunteers;
+  if (search) vols = vols.filter(v=>(v.first_name+' '+v.last_name+(v.email||'')).toLowerCase().includes(search));
+  const tbody = document.getElementById('vol-tbody');
+  if (!vols.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">No volunteers found.</td></tr>'; return; }
+  tbody.innerHTML = vols.map((v,i)=>{
+    const c = COLORS[i%COLORS.length];
+    const progs = v.volunteer_programs?.map(vp=>vp.programs?.name).filter(Boolean).join(', ')||'—';
+    return `<tr>
+      <td><div style="display:flex;align-items:center;gap:.65rem">
+        <div class="v-avatar" style="background:${c}25;color:${c}">${((v.first_name||'')[0]+(v.last_name||'')[0]).toUpperCase()}</div>
+        <div><div style="font-weight:700">${esc(v.first_name)} ${esc(v.last_name||'')}</div></div>
+      </div></td>
+      <td style="color:var(--text-muted);font-size:.82rem">${esc(v.email||'—')}</td>
+      <td style="color:var(--text-muted);font-size:.82rem">${esc(v.phone||'—')}</td>
+      <td style="font-size:.8rem">${esc(progs)}</td>
+      <td><span class="hours-badge">${Math.round(v.total_hours||0)}h</span></td>
+      <td>${v.is_admin?'<span class="admin-badge-pill">Admin</span>':'<span style="color:var(--text-muted);font-size:.8rem">Volunteer</span>'}</td>
+      <td><button class="btn btn-outline btn-sm" onclick="openVolModal('${v.id}')">Edit</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function openVolModal(id) {
+  const v = allVolunteers.find(vol=>vol.id===id);
+  if (!v) return;
+  document.getElementById('vol-edit-id').value = id;
+  document.getElementById('vol-first').value = v.first_name||'';
+  document.getElementById('vol-last').value = v.last_name||'';
+  document.getElementById('vol-phone').value = v.phone||'';
+  document.getElementById('vol-is-admin').checked = v.is_admin||false;
+  const box = document.getElementById('vol-prog-checks');
+  const assigned = v.volunteer_programs?.map(vp=>vp.program_id)||[];
+  box.innerHTML = allPrograms.map(p=>`<label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;cursor:pointer">
+    <input type="checkbox" value="${p.id}" ${assigned.includes(p.id)?'checked':''} style="accent-color:var(--teal);width:15px;height:15px"> ${esc(p.name)}
+  </label>`).join('');
+  openModal('vol-modal');
+}
+
+async function saveVolunteer() {
+  const id = document.getElementById('vol-edit-id').value;
+  const first = document.getElementById('vol-first').value.trim();
+  const last = document.getElementById('vol-last').value.trim();
+  const phone = document.getElementById('vol-phone').value.trim();
+  const isAdmin = document.getElementById('vol-is-admin').checked;
+  const progIds = Array.from(document.querySelectorAll('#vol-prog-checks input:checked')).map(i=>i.value);
+  setLoading(true);
+  await sb.from('profiles').update({ first_name:first, last_name:last, phone, is_admin:isAdmin }).eq('id', id);
+  await sb.from('volunteer_programs').delete().eq('volunteer_id', id);
+  if (progIds.length) await sb.from('volunteer_programs').insert(progIds.map(pid=>({ volunteer_id:id, program_id:pid })));
+  setLoading(false);
+  closeModal('vol-modal');
+  toast('Volunteer updated!');
+  await loadData();
+}
+
+// PROGRAMS
+function renderPrograms() {
+  const grid = document.getElementById('programs-grid');
+  if (!allPrograms.length) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><img src="https://images.squarespace-cdn.com/content/v1/5acd6d2a3e2d09e44728ddca/1525190759014-EEDM1UP0OIHE0N001FST/SweetPawsLogo-knockout.png?format=1500w" alt="Sweet Paws Rescue" style="height:48px;object-fit:contain;margin-bottom:.5rem"><p>No programs yet.<br>Admins can create programs to organize events.</p></div>';
+    return;
+  }
+  grid.innerHTML = allPrograms.map(p=>{
+    const evCount = allEvents.filter(e=>e.program_id===p.id).length;
+    const pubCount = allEvents.filter(e=>e.program_id===p.id&&e.status==='published').length;
+    return `<div class="program-card" style="border-top-color:${p.color}">
+      <div class="program-card-name">${esc(p.name)}</div>
+      ${p.description?`<div class="program-card-desc">${esc(p.description)}</div>`:''}
+      <div class="program-stats">
+        <div class="program-stat"><span>${evCount}</span> events</div>
+        <div class="program-stat"><span>${pubCount}</span> published</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function saveProgram() {
+  const name = document.getElementById('prog-name').value.trim();
+  if (!name) { toast('Program name is required.', true); return; }
+  const { error } = await sb.from('programs').insert({ name, description: document.getElementById('prog-desc').value.trim(), color: selectedProgColor });
+  if (error) { toast(error.message, true); return; }
+  document.getElementById('prog-name').value = '';
+  document.getElementById('prog-desc').value = '';
+  closeModal('prog-modal');
+  toast('Program created!');
+  await loadData();
+}
+
+// HELPERS
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id)?.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.page===id||(id==='event-detail'&&n.dataset.page==='events')));
+  document.querySelectorAll('.mobile-nav-item').forEach(n=>n.classList.toggle('active', n.dataset.page===id||(id==='event-detail'&&n.dataset.page==='events')));
+  // Persist current page in sessionStorage (survives reload but not tab close)
+  try { sessionStorage.setItem('sp_page', id); if (id==='event-detail' && currentEventId) sessionStorage.setItem('sp_event', currentEventId); } catch(e){}
+  if (id==='create-event' && !document.getElementById('ev-edit-id').value) {
+    document.getElementById('editor-title').textContent = 'Create New Event';
+    document.getElementById('roles-editor-list').innerHTML = '';
+    document.getElementById('ev-links-list').innerHTML = '';
+    editingRoleCount = 0;
+    ['ev-name','ev-location','ev-address','ev-desc'].forEach(f=>{const el=document.getElementById(f);if(el)el.value='';});
+    ['ev-start','ev-end'].forEach(f=>{const el=document.getElementById(f);if(el)el.value='';});
+    document.getElementById('ev-is-template').checked = false;
+    document.getElementById('ev-recurring').checked = false;
+    document.getElementById('recurrence-opts').style.display = 'none';
+    const templates = allEvents.filter(e=>e.is_template && e.created_by===currentUser?.id);
+    const panel = document.getElementById('templates-panel');
+    if (templates.length) {
+      panel.style.display = 'block';
+      document.getElementById('templates-list').innerHTML = templates.map(t=>`<button class="btn btn-outline btn-full" style="margin-bottom:.4rem;justify-content:flex-start" onclick="loadTemplate('${t.id}')">${esc(t.name)}</button>`).join('');
+    } else panel.style.display = 'none';
+  }
+  if (id !== 'create-event') document.getElementById('ev-edit-id').value = '';
+}
+function loadTemplate(id) {
+  const t = allEvents.find(e=>e.id===id);
+  if (!t) return;
+  document.getElementById('ev-name').value = t.name + ' (Copy)';
+  document.getElementById('ev-location').value = t.location||'';
+  document.getElementById('ev-address').value = t.address||'';
+  document.getElementById('ev-desc').value = t.description||'';
+  document.getElementById('ev-program').value = t.program_id||'';
+  document.getElementById('roles-editor-list').innerHTML = '';
+  document.getElementById('ev-links-list').innerHTML = '';
+  editingRoleCount = 0;
+  (t.event_roles||[]).forEach(r=>addRoleEditor(r));
+  (t.links||[]).forEach(l=>addLinkEditor(l));
+  toast('Template loaded!');
+}
+function addLinkEditor(link={}) {
+  const list = document.getElementById('ev-links-list');
+  const div = document.createElement('div');
+  div.className = 'link-editor-row';
+  div.innerHTML = `
+    <div class="form-row" style="align-items:center;gap:.5rem">
+      <div class="form-group" style="margin-bottom:0"><input type="text" class="le-label" placeholder="Button label (e.g. Volunteer Guide)" value="${(link.label||'').replace(/"/g,'&quot;')}"></div>
+      <div class="form-group" style="margin-bottom:0;flex:2"><input type="url" class="le-url" placeholder="https://docs.google.com/..." value="${(link.url||'').replace(/"/g,'&quot;')}"></div>
+      <button class="btn btn-ghost btn-sm" style="color:#ef4444;white-space:nowrap;flex-shrink:0" onclick="this.closest('.link-editor-row').remove()">Remove</button>
+    </div>`;
+  list.appendChild(div);
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function setLoading(show) { document.getElementById('loading').classList.toggle('show', show); }
+function toast(msg, isError=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show'+(isError?' error':'');
+  clearTimeout(t._to); t._to = setTimeout(()=>t.className='toast', 3200);
+}
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtDate(dt) {
+  if (!dt) return '';
+  return new Date(dt).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+}
+function fmtTime(dt) {
+  if (!dt) return '';
+  return new Date(dt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+}
+
+// STARTUP
+window.addEventListener('DOMContentLoaded', () => {
+  const url = localStorage.getItem('sp_url');
+  const key = localStorage.getItem('sp_key');
+  if (url && key) {
+    document.getElementById('cfg-url').value = url;
+    document.getElementById('cfg-key').value = key;
+    sb = supabase.createClient(url, key);
+    showScreen('auth-screen');
+    checkSession();
+  }
+
+  // Wire event-level time fields to update role auto-hours
+  document.getElementById('ev-start').addEventListener('change', onEventTimeChange);
+  document.getElementById('ev-end').addEventListener('change', onEventTimeChange);
+});
+</script>
+</body>
+</html>
